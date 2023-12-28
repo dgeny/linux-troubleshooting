@@ -1,0 +1,9 @@
+[Unit]
+Description="Custom hwclock service"
+Required-Stop=mountdevsubfs
+Should-Stop=umountfs
+
+[Service]
+Environment="HCTOSYS_DEVICE=rtc0"
+ExecStart=/bin/bash -c 'if /sbin/hwclock --rtc=/dev/$HCTOSYS_DEVICE --systohc; then echo \"Hardware Clock updated to `date`\"; fi'
+Type=oneshoot
