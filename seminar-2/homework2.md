@@ -91,7 +91,78 @@ Type=oneshot
 
 Установите пакет apache2. Дополните конфигурацию сервиса, не меняя основной файл юнита настройкой: PrivateTmp=no.
 
+
 ### Решение
+
+#### Установка пакета
+```bash
+
+user@gb-ubuntu:~$ sudo apt install apache2
+...
+Created symlink /etc/systemd/system/multi-user.target.wants/apache2.service → /lib/systemd/system/apache2.service.
+Created symlink /etc/systemd/system/multi-user.target.wants/apache-htcacheclean.service → /lib/systemd/system/apache-htcacheclean.service.
+Processing triggers for ufw (0.36.1-4ubuntu0.1) ...
+...
+user@gb-ubuntu:~$
+```
+
+#### Дополнение конфигурации
+```bash
+user@gb-ubuntu:~$ sudo systemctl edit apache2
+[sudo] password for user: 
+user@gb-ubuntu:~$ sudo systemctl daemon-reload 
+user@gb-ubuntu:~$ sudo systemctl status apache2
+● apache2.service - The Apache HTTP Server
+     Loaded: loaded (/lib/systemd/system/apache2.service; enabled; vendor preset: enabled)
+    Drop-In: /etc/systemd/system/apache2.service.d
+             └─override.conf
+     Active: active (running) since Thu 2023-12-28 15:15:04 UTC; 11min ago
+       Docs: https://httpd.apache.org/docs/2.4/
+   Main PID: 4788 (apache2)
+      Tasks: 55 (limit: 2213)
+     Memory: 4.8M
+        CPU: 62ms
+     CGroup: /system.slice/apache2.service
+             ├─4788 /usr/sbin/apache2 -k start
+             ├─4790 /usr/sbin/apache2 -k start
+             └─4791 /usr/sbin/apache2 -k start
+
+Dec 28 15:15:04 gb-ubuntu systemd[1]: Starting The Apache HTTP Server...
+Dec 28 15:15:04 gb-ubuntu apachectl[4787]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 127.0.1.1. Set the 'ServerName' directive globally >
+Dec 28 15:15:04 gb-ubuntu systemd[1]: Started The Apache HTTP Server.
+user@gb-ubuntu:~$ sudo systemctl restart apache2
+user@gb-ubuntu:~$ sudo systemctl status apache2
+● apache2.service - The Apache HTTP Server
+     Loaded: loaded (/lib/systemd/system/apache2.service; enabled; vendor preset: enabled)
+    Drop-In: /etc/systemd/system/apache2.service.d
+             └─override.conf
+     Active: active (running) since Thu 2023-12-28 15:27:30 UTC; 2s ago
+       Docs: https://httpd.apache.org/docs/2.4/
+    Process: 5286 ExecStart=/usr/sbin/apachectl start (code=exited, status=0/SUCCESS)
+   Main PID: 5291 (apache2)
+      Tasks: 55 (limit: 2213)
+     Memory: 4.7M
+        CPU: 25ms
+     CGroup: /system.slice/apache2.service
+             ├─5291 /usr/sbin/apache2 -k start
+             ├─5292 /usr/sbin/apache2 -k start
+             └─5293 /usr/sbin/apache2 -k start
+
+Dec 28 15:27:30 gb-ubuntu systemd[1]: apache2.service: Deactivated successfully.
+Dec 28 15:27:30 gb-ubuntu systemd[1]: Stopped The Apache HTTP Server.
+Dec 28 15:27:30 gb-ubuntu systemd[1]: Starting The Apache HTTP Server...
+Dec 28 15:27:30 gb-ubuntu apachectl[5289]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 127.0.1.1. Set the 'ServerName' directive globally >
+Dec 28 15:27:30 gb-ubuntu systemd[1]: Started The Apache HTTP Server.
+
+```
+
+Содержимое /etc/systemd/system/apache2.service.d/override.conf
+
+```ini
+[Service]
+PrivateTmp=0
+```
+
 
 ## Задание 3. 
 
