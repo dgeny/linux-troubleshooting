@@ -171,3 +171,9 @@ PrivateTmp=0
 Найдите с помощью journalctl все успешные и неуспешные попытки подключения по SSH под вашим пользователем за сегодня, посчитайте количество этих попыток отдельно по типам.
 
 ### Решение
+
+```bash
+user@gb-ubuntu:~$ journalctl -S today -u ssh --grep "Accepted|Failed" | awk '{print $6 " " $7 " " $9}' | grep -v '^  $'  | sort | uniq -c | grep $USER
+     15 Accepted publickey user
+      1 Failed password user
+```
