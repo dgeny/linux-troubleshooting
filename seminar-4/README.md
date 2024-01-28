@@ -34,7 +34,7 @@
 Снимите профиль системы с помощью perf. Найдите самые нагруженные участки кода.
 
 ### Решение
-Нагрузка создается запуском [Flask-приложения](app.py).
+Нагрузка создается запуском [Flask-приложения](https://github.com/dgeny/linux-troubleshooting/blob/main/seminar-4/app.py).
 При вызове функции hard производится взятие 5млн. раз sha384. 
 При вызове функции loop приложение уходит в бесконечный цикл.
 Команда запуска:
@@ -47,4 +47,4 @@ sudo perf report -g -o hard.perf python -m flask run --host 0.0.0.0  --port 80
 
 ![Скрин](screenshots/screen5.png)
 
-Запись отчета прилагается в [файле](hard.prof)
+Запись отчета прилагается в [файле](https://github.com/dgeny/linux-troubleshooting/blob/main/seminar-4/hard.prof)
