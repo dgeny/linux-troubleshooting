@@ -62,7 +62,7 @@
 
 2. Для каждого сгенерируем собственный ключ для соединения `for i in $(seq 1 5);do ssh-keygen -b 2048 -t rsa -f ./sshkey$i -q -N "";done;`:
 
-![screen4]()
+![screen4](screenshots/screen4.png)
 
 3. Добавим публичный ключ каждому пользователю утлитой `ssh-copy-id`:
 
