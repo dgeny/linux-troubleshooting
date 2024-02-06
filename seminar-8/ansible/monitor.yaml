@@ -1,0 +1,15 @@
+# https://github.com/prometheus/prometheus/releases/download/v2.45.3/prometheus-2.45.3.linux-amd64.tar.gz
+# https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz
+all:
+  hosts:
+    server:
+      ansible_host: 192.168.31.11
+      ansible_user: user
+      ansible_become_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          37653134363431396638346265366561316133633831306437643061353036643630393138646136
+          6565643836323130626639386163616162663632366433300a363337643136396533623664616231
+          31303265623832346565613338336331396632353432303861343532336663313836396237353161
+          6130366262343231310a363661303463643565653831353833333165316365363238373965396364
+          3764
+      ansible_become_method: ansible.builtin.sudo

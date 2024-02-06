@@ -1,0 +1,18 @@
+[Unit]
+Description=Prometheus server service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64/prometheus \
+--config.file=/etc/prometheus/prometheus.yml \
+--storage.tsdb.path=/var/lib/prometheus \
+--web.console.templates=/etc/prometheus/consoles \
+--web.console.templates=/etc/prometheus/console_libraries
+ExecReload=/bin/kill -HUP $MAINPID 
+
+[Install]
+WantedBy=multi-user.target
