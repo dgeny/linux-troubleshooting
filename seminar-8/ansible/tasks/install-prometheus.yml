@@ -1,0 +1,170 @@
+---
+- name: User add for prometheus server
+  ansible.builtin.user:
+    comment: Automated created account for prometheus server
+    create_home: false
+    name: prometheus
+    shell: /usr/sbin/nologin
+    # state: present
+    # system: true
+  become: true
+
+- name: User add for prometheus node exporter
+  ansible.builtin.user:
+    comment: Automated created account for prometheus node exporter
+    create_home: false
+    name: node_exporter
+    shell: /usr/sbin/nologin
+    state: present
+    system: true
+  become: true
+
+- name: Determine latest GitHub release
+  ansible.builtin.uri:
+    url: "https://api.github.com/repos/prometheus/prometheus/releases/latest"
+    body_format: json
+  register: _github_release
+  until: _github_release.status == 200
+  retries: 5
+
+- name: Set prometheus_version
+  ansible.builtin.set_fact:
+    prometheus_version: "{{ _github_release.json.tag_name
+      | regex_replace('^v?(.*)$', '\\1') }}"
+
+- name: Download and verify SHA256 checksum
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus/prometheus/releases/download/\
+      v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64.tar.gz"
+    dest: "/tmp/prometheus.tgz"
+    checksum: "sha256:https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/sha256sums.txt"
+    mode: "0644"
+
+- name: Unarchive prometheus server
+  ansible.builtin.unarchive:
+    src: /tmp/prometheus.tgz
+    remote_src: true
+    dest: /tmp
+    include:
+      - "prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64/prometheus"
+      - "prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64/promtool"
+    list_files: true # not required. If set to True, return the list of files that are contained in the tarball.
+  register: server_files
+
+- name: Copy server executable to destination
+  ansible.builtin.copy:
+    remote_src: true
+    src: "{{ item }}"
+    dest: "/usr/local/bin/"
+    mode: "0755"
+    owner: prometheus
+  with_items:
+    - "/tmp/prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64/prometheus"
+    - "/tmp/prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64/promtool"
+  become: true
+
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+    owner: prometheus
+    group: prometheus
+  with_items:
+    - "/etc/prometheus"
+    - "/var/lib/prometheus"
+  become: true
+
+- name: Unarchive prometheus utility
+  ansible.builtin.unarchive:
+    src: /tmp/prometheus.tgz
+    remote_src: true
+    dest: /tmp/
+    include:
+      - "prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64/consoles"
+      - "prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64/console_libraries"
+      - "prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64/prometheus.yml"
+
+- name: Copy server utilities to destination
+  ansible.builtin.copy:
+    remote_src: true
+    src: "{{ item }}"
+    dest: "/var/lib/prometheus"
+    mode: "0755"
+    owner: prometheus
+  with_items:
+    - "/tmp/prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64/consoles"
+    - "/tmp/prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64/console_libraries"
+  become: true
+
+- name: Copy server config to destination
+  ansible.builtin.copy:
+    remote_src: true
+    src: "/tmp/prometheus-{{ prometheus_version }}.{{ ansible_system | lower }}-amd64/prometheus.yml"
+    dest: "/etc/prometheus"
+    mode: "0644"
+    owner: prometheus
+  become: true
+
+- name: Set node_exporter instance for prometheus server
+  ansible.builtin.blockinfile:
+    path: "/etc/prometheus/prometheus.yml"
+    block: |
+          - job_name: 'node_exporter'
+            scrape_interval: 5s
+            static_configs:
+              - targets: ['localhost:9100']
+  become: true
+
+- name: Determine latest GitHub release of node exporter
+  ansible.builtin.uri:
+    url: "https://api.github.com/repos/prometheus/node_exporter/releases/latest"
+    body_format: json
+  register: _github_release
+  until: _github_release.status == 200
+  retries: 5
+
+- name: Set node_exporter_version
+  ansible.builtin.set_fact:
+    node_exporter_version: "{{ _github_release.json.tag_name
+      | regex_replace('^v?(.*)$', '\\1') }}"
+
+- name: Download and verify SHA256 checksum
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus/node_exporter/releases/download/\
+        v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.{{ ansible_system | lower }}-amd64.tar.gz"
+    dest: "/tmp/node.tgz"
+    checksum: "sha256:https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/sha256sums.txt"
+    mode: "0644"
+
+- name: Unarchive prometheus node_exporter
+  ansible.builtin.unarchive:
+    src: /tmp/node.tgz
+    remote_src: true
+    dest: /tmp
+    include:
+      - "node_exporter-{{ node_exporter_version }}.{{ ansible_system | lower }}-amd64/node_exporter"
+  become: true
+
+- name: Copy node_exporter to destination
+  ansible.builtin.copy:
+    remote_src: true
+    src: "/tmp/node_exporter-{{ node_exporter_version }}.{{ ansible_system | lower }}-amd64/node_exporter"
+    dest: "/usr/local/bin"
+    mode: "0755"
+    owner: node_exporter
+  become: true
+
+- name: Create systemd node exporter service
+  ansible.builtin.template:
+    src: node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+    mode: "0644"
+  become: true
+
+- name: Create systemd server service
+  ansible.builtin.template:
+    src: prometheus.service.j2
+    dest: /etc/systemd/system/prometheus.service
+    mode: "0644"
+  become: true
